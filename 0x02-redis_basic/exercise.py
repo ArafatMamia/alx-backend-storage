@@ -1,25 +1,30 @@
 #!/usr/bin/env python3
-""" Tasks - Redis """
-
+""" Writing strings to Redis """
 import redis
-from typing import Union
-from uuid import uuid4, UUID
+import uuid
+from typing import Union, Callable
+
 
 class Cache:
-    """ Class for implementing a Cache """
-
+    """A redis cache class
+    Args:  _redis: private instance of the Redis client
+    """
     def __init__(self):
-        """ Constructor Method """
         self._redis = redis.Redis()
         self._redis.flushdb()
 
-    @call_history
-    @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
-        """Store the input data in Redis using a
-        random key and return the key.
+        """Stores input data in Redis using a random key
         """
-        random_key = str(uuid4())
-        self._redis.set(random_key, data)
-        
-        return random_key
+        key = str(uuid.uuid1())
+        self._redis.mset({key: data})
+        return key
+
+    def get(self, key: str, fn: Callable) -> Union[str, bytes, int, float]:
+        """Gets the value of a string and returns it converted to
+        the right type
+        """
+        if fn:
+            return fn(self._redis.get(key))
+        else:
+            return self._redis.get(key)
